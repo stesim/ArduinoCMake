@@ -2,6 +2,8 @@ if(NOT ARDUINO_CONFIG_INCLUDED)
 set(ARDUINO_CONFIG_INCLUDED TRUE)
 
 
+set(ARDUINO_CONFIG_PATH ${CMAKE_CURRENT_LIST_DIR})
+
 if(CMAKE_HOST_WIN32)
 	include(Platform/WindowsPaths)
 elseif(CMAKE_HOST_UNIX)
@@ -250,7 +252,7 @@ endfunction()
 function(find_arduino_toolchain_file)
 	find_file(CMAKE_TOOLCHAIN_FILE
 		NAMES "${ARDUINO_PLATFORM}-${ARDUINO_ARCH}-toolchain.cmake"
-		HINTS ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH}
+		HINTS ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}
 		DOC "Arduino toolchain file"
 		NO_DEFAULT_PATH
 		)
@@ -310,9 +312,28 @@ function(add_arduino_library LIBRARY)
 endfunction()
 
 
+function(target_sketch TARGET)
+	set(INO_CPP "${CMAKE_BINARY_DIR}/${TARGET}.ino.cpp")
+
+	get_target_property(TARGET_SOURCES ${TARGET} SOURCES)
+	foreach(SOURCE ${TARGET_SOURCES})
+		if(SOURCE MATCHES "\\.ino$")
+			set(SKETCH_PATH ${SOURCE})
+		endif()
+	endforeach()
+
+	if(NOT SKETCH_PATH)
+		message(FATAL_ERROR "Sketch not found in sources of target: ${TARGET}")
+	endif()
+
+	configure_file("${ARDUINO_CONFIG_PATH}/InoWrapper.cpp" ${INO_CPP})
+	target_sources(${TARGET} PRIVATE ${INO_CPP})
+endfunction()
+
+
 include(CMakeParseArguments)
 macro(setup_arduino PLATFORM BOARD)
-	cmake_parse_arguments(ARGS "NO_CORE" "CPU" "EXTRA_BOARD_PROPERTIES" ${ARGN})
+	cmake_parse_arguments(ARGS "NO_CORE" "CPU" "" ${ARGN})
 
 	set(ARDUINO_PLATFORM ${PLATFORM} CACHE STRING "Arduino platform")
 	set(ARDUINO_BOARD ${BOARD} CACHE STRING "Arduino board")
