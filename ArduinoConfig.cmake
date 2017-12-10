@@ -319,6 +319,7 @@ function(target_sketch TARGET)
 	foreach(SOURCE ${TARGET_SOURCES})
 		if(SOURCE MATCHES "\\.ino$")
 			set(SKETCH_PATH ${SOURCE})
+			get_filename_component(SKETCH_PATH ${SKETCH_PATH} ABSOLUTE)
 		endif()
 	endforeach()
 
